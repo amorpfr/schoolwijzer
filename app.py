@@ -36,4 +36,4 @@ app.layout = html.Div(children=[
     [Input(component_id='my-id', component_property='value')]
 )
 def update_output_div(input_value):
-return 'You\'ve entered "{}"'.format(input_value)
+    return 'You\'ve entered "{}"'.format(input_value)
