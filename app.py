@@ -541,7 +541,7 @@ app.layout = html.Div(
                                                       {'label':  'MAVO', 'value':'MAVO'} ,
                                                       {'label' :'HAVO', 'value': 'HAVO'},
                                                       {'label': 'VWO', 'value':'VWO'}],
-                                            #value= ['PRO', 'VBO', 'MAVO', 'HAVO', 'VWO'],
+                                            #value= "HAVO",
                                             placeholder="Selecteer niveau")
                                             #labelStyle={'display': 'inline-block'}
                                     ],
@@ -759,18 +759,23 @@ def update_output(value):
      Input('niveau', 'value'),
      Input('geloof', 'value')])                                 
 def update_selected_row_indices(radius, postcode, niveau, geloof):
-    
     # combined niveaus also possible
-    niveau = [x for x in map_data['Niveau'].unique().tolist() if niveau in x]
+    if niveau is None:
+        niveau = "HAVO"
+        niveau = [x for x in map_data['Niveau'].unique().tolist() if niveau in x]
+        rows = map_data.to_dict('records')
+        return rows
+    else:
+        niveau = [x for x in map_data['Niveau'].unique().tolist() if niveau in x]
     map_aux = map_data.copy()
     map_aux = map_aux[map_aux["Niveau"].isin(niveau)]
-    
+        
     # No preference geloof
     if geloof == "Geen voorkeur":
         map_aux = map_aux
     else:
         map_aux = map_aux.loc[map_aux["Geloofsovertuiging"] == geloof]
-        
+            
     # init radius data
     radius = radius # in kilometer
     result = []
@@ -779,14 +784,14 @@ def update_selected_row_indices(radius, postcode, niveau, geloof):
     lat_user = lat(postal_input)
     lats = map_aux['Latitude'].tolist()
     lons = map_aux['Longitude'].tolist()
-    
+        
     # Get all schools within radius
     for i in range(0,len(lats)):
         result.append(check_range(lat_user, lon_user, lats[i], lons[i], radius))
-    
+        
     # select the rows within the range
     map_aux = map_aux[result] 
-       
+           
     # convert to dict
     rows = map_aux.to_dict('records')
     return rows
@@ -807,15 +812,34 @@ def update_selected_row_indices1(data_keuze, rows):
 # map
 @app.callback(
     Output('map-graph', 'figure'),
-    [Input('datatable', 'rows')])       
-def map_selection(rows):
-    aux = pd.DataFrame(rows)
-    lats = aux['Latitude'].tolist()
-    longs = aux['Longitude'].tolist()
-    lats_center = sum(lats)/len(lats)
-    longs_center = sum(longs)/len(longs)
-    center = dict(lon=longs_center, lat=lats_center)
-    return gen_map(aux, center, 10.5)
+    [Input('datatable', 'rows'),
+     Input('datatable', 'selected_row_indices')])       
+def map_selection(rows, indices):
+    if (len(rows) == len(map_data)) and (len(indices) ==0):
+        lats = map_data['Latitude'].tolist()
+        longs = map_data['Longitude'].tolist()
+        lats_center = sum(lats)/len(lats)
+        longs_center = sum(longs)/len(longs)
+        center = dict(lon=longs_center, lat=lats_center)
+        return gen_map(map_data, center, 6.1)
+    elif (len(rows) == len(map_data)) :
+        aux = pd.DataFrame(rows)
+        aux = aux.iloc[indices]
+        lats = aux['Latitude'].tolist()
+        longs = aux['Longitude'].tolist()
+        lats_center = sum(lats)/len(lats)
+        longs_center = sum(longs)/len(longs)
+        center = dict(lon=longs_center, lat=lats_center)
+        return gen_map(aux, center, 6.1)        
+    else:
+        aux = pd.DataFrame(rows)
+        aux = aux.iloc[indices]
+        lats = aux['Latitude'].tolist()
+        longs = aux['Longitude'].tolist()
+        lats_center = sum(lats)/len(lats)
+        longs_center = sum(longs)/len(longs)
+        center = dict(lon=longs_center, lat=lats_center)
+        return gen_map(aux, center, 10.5)
 
 
 # figures
@@ -935,6 +959,8 @@ def tekst_uitleg( omgevingsfactor ):
      Input('datatable', 'selected_row_indices'),
      Input('preferenties', 'value')])
 def figure_d1(rows, selected_row_indices, voorkeuren):
+    
+    # make df
     df = pd.DataFrame(rows)
     df = df.iloc[selected_row_indices]
     
@@ -959,7 +985,7 @@ def figure_d1(rows, selected_row_indices, voorkeuren):
     for x in df_numeric.columns:
         input_vector[x] = df_numeric[x].mean()
         
-    #tune input
+    # tune input
     if len(voorkeuren)>0:
         features, plus_min = convert_preferenes(voorkeuren)
         input_vector = tune_vector(features,plus_min, input_vector, df_numeric)
@@ -968,11 +994,14 @@ def figure_d1(rows, selected_row_indices, voorkeuren):
     df_res = get_ranking(input_vector, df_numeric, 'Score Match')
     df['MatchScore'] = df_res['Score Match']
     df = df.sort_values(by= 'MatchScore')
+    
+    # graph input
     scholen = df['Schoolnaam'].tolist()
     ss = df['MatchScore']*100
     ss = ss.astype(int).tolist()
     teksts = [str(x) + "% match" for x in ss]
         
+    # plot
     layout = go.Layout(
         xaxis=dict(
             showgrid=True,
@@ -1024,7 +1053,7 @@ def figure_d1(rows, selected_row_indices, voorkeuren):
     annotations = []
 
     for i in range(0, len(ss)):
-        annotations.append(dict(x=ss[i]-9, y=scholen[i], text=teksts[i],
+        annotations.append(dict(x=ss[i]-8, y=scholen[i], text=teksts[i],
                                   font=dict(family='Open Sans,sans-serif', size=16,
                                   color='rgba(245, 246, 249, 1)'),
                                   showarrow=False,))
