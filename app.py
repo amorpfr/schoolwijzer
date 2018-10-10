@@ -1024,7 +1024,7 @@ def figure_d1(rows, selected_row_indices, voorkeuren):
     annotations = []
 
     for i in range(0, len(ss)):
-        annotations.append(dict(x=ss[i]-5, y=scholen[i], text=teksts[i],
+        annotations.append(dict(x=ss[i]-9, y=scholen[i], text=teksts[i],
                                   font=dict(family='Open Sans,sans-serif', size=16,
                                   color='rgba(245, 246, 249, 1)'),
                                   showarrow=False,))
