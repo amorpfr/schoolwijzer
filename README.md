@@ -6,6 +6,7 @@ This is a repository for the Schoolwijzer dashboard, where kids and parents can 
 - Clone repository and run app.py
 
 ### Files
-.gitignore, Procfile, requirements.txt - For heroku app purposes
-schooldata - All the schooldata (data is already merged per school)
-postcodetabel - File where any postal code in the Netherlands is connected to a latitude and longitude
+- .gitignore, Procfile, requirements.txt - For heroku app purposes
+- schooldata.xlsx - All the schooldata (data is already merged per school)
+- postcodetabel.xlsx - File where any postal code in the Netherlands is connected to a latitude and longitude
+- app.py - All code for schoolwijzer app
