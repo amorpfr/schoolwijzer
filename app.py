@@ -34,7 +34,7 @@ app.title = 'Schoolwijzer'
 
 # API keys and datasets
 mapbox_access_token = 'pk.eyJ1IjoiYW1vcnBmciIsImEiOiJjamx6NDVsNGUxc2M3M2tsODExOHNwbnZwIn0.POAeZ_S8K33WRnb1Wiikbw'
-map_data = pd.read_excel("data_demo4a.xlsx")
+map_data = pd.read_excel("schooldata.xlsx")
 map_data = map_data.sort_values(by='Gemeente')
 postcodetabel = pd.read_excel("postcodetabel.xlsx")
 
@@ -73,7 +73,6 @@ layout_table['margin-top'] = '20'
 # tabs style
 tab_style = {
     'color': 'white',
-    #'backgroundColor': '#345E98'
     'backgroundColor': '#2a3f5f'
 }
 
@@ -815,6 +814,7 @@ def update_selected_row_indices1(data_keuze, rows):
     [Input('datatable', 'rows'),
      Input('datatable', 'selected_row_indices')])       
 def map_selection(rows, indices):
+    # starting screen (show map with all schools)
     if (len(rows) == len(map_data)) and (len(indices) ==0):
         lats = map_data['Latitude'].tolist()
         longs = map_data['Longitude'].tolist()
@@ -822,6 +822,8 @@ def map_selection(rows, indices):
         longs_center = sum(longs)/len(longs)
         center = dict(lon=longs_center, lat=lats_center)
         return gen_map(map_data, center, 6.1)
+    
+    # starting screen (show map with all schools)
     elif (len(rows) == len(map_data)) :
         aux = pd.DataFrame(rows)
         aux = aux.iloc[indices]
@@ -830,7 +832,9 @@ def map_selection(rows, indices):
         lats_center = sum(lats)/len(lats)
         longs_center = sum(longs)/len(longs)
         center = dict(lon=longs_center, lat=lats_center)
-        return gen_map(aux, center, 6.1)        
+        return gen_map(aux, center, 6.1)   
+     
+    # variables are selected
     else:
         aux = pd.DataFrame(rows)
         aux = aux.iloc[indices]
@@ -842,7 +846,7 @@ def map_selection(rows, indices):
         return gen_map(aux, center, 10.5)
 
 
-# figures
+# man/vrouw leerlingen
 @app.callback(
     Output('bar-graph', 'figure'),
     [Input('datatable', 'rows'),
@@ -860,7 +864,7 @@ def figure_a1(rows, selected_row_indices):
     fig = stacked_bar(vrouw,man,scholen,'Meisjes','Jongens', layout)
     return fig
     
-   
+# cijfers school algemeen
 @app.callback(
     Output('figure_a2', 'figure'),
     [Input('datatable', 'rows'),
@@ -875,6 +879,7 @@ def figure_a2(rows, selected_row_indices):
     fig = go.Figure(data=data, layout=layout)
     return fig
 
+# cijfers leerlingen
 @app.callback(
     Output('figure_a3', 'figure'),
     [Input('datatable', 'rows'),
@@ -889,24 +894,31 @@ def figure_a3(rows, selected_row_indices):
     fig = go.Figure(data=data, layout=layout)
     return fig
 
+# Personeel man/vrouw
 @app.callback(
     Output('figure_b1', 'figure'),
     [Input('datatable', 'rows'),
      Input('datatable', 'selected_row_indices')])
 def figure_b1(rows, selected_row_indices):
+    # data
     df = pd.DataFrame(rows)
     df = df.iloc[selected_row_indices]
     scholen = df['Schoolnaam'].tolist()
+    
+    # percentage
     man = df['Percentage man personeel']/100
     vrouw = 1-man
     vrouw = df['Aantal Personeel']*vrouw
     vrouw=vrouw.astype(int)
     man = df['Aantal Personeel']*man
     man = man.astype(int)
+    
+    # layout
     layout = layout_stacked_bar("Aantal personeel", "rgba(255, 255, 255, 1)")
     fig = stacked_bar(vrouw,man,scholen,'Vrouwen','Mannen', layout)
     return fig
 
+# Personeel dot plot
 @app.callback(
     Output('figure_b2', 'figure'),
     [Input('datatable', 'rows'),
@@ -938,6 +950,7 @@ def figure_c1(rows, selected_row_indices, omgevingsfactor ):
     center = dict(lon=longs_center, lat=lats_center)
     return gen_omgeving(aux, center, 11.5, omgevingsfactor)
 
+# information about difficult variables
 @app.callback(
     Output('uitleg', 'children'),
     [Input('omgeving', 'value')])       
