@@ -18,7 +18,7 @@ from dash.dependencies import Input, Output, State, Event
 from math import radians, cos, sin, asin, sqrt
 from random import randint
 
-from sklearn.neighbors import KDTree
+from scipy import stats
 from sklearn import preprocessing
 import numpy as np
 import seaborn as sns
@@ -408,15 +408,41 @@ def tune_vector(column,plus_min, data_input, data_total):
     i=0
     for i in range(0, len(column)):
         if plus_min[i] == -1:
-            data_input[column[i]] = data_total[column[i]].mean() -  data_total[column[i]].std()
+            data_input[column[i]] = data_total[column[i]].mean() -  (2*data_total[column[i]].std())
             if data_input[column[i]] < 0:
                 data_input[column[i]] =0
         elif plus_min[i] == 1:
-            data_input[column[i]] = data_total[column[i]].mean() +  data_total[column[i]].std()
+            data_input[column[i]] = data_total[column[i]].mean() +  (2*data_total[column[i]].std())
         else:
             data_input[column[i]] = data_total[column[i]].mean()
         
     return data_input
+
+def get_percentile(array, value):
+    return stats.percentileofscore(array, value, kind='weak')
+
+
+def percentile_rank(df, columns, plus_min):
+    i=0
+    result_df = pd.DataFrame()
+    # for each column
+    for i in range(0,len(columns)):
+        column_name = columns[i]
+        array = df[column_name].tolist()
+        j=0
+        res = []
+        # compute percentile for each value in column
+        for j in range(0,len(array)):
+            percentile = get_percentile(array, array[j])
+            if plus_min[i] == 1:
+                res.append(round(percentile,2))
+            elif plus_min[i] == -1:
+                res.append(round(100-percentile,2))
+            else:
+                print("Error")
+        result_df[column_name] = res
+    
+    return round(result_df.mean(axis=1),1)
 
 def convert_preferenes(preferences):
     """
@@ -465,7 +491,7 @@ def convert_preferenes(preferences):
             
         
 #########################################################################################
-# website html layout
+# website html - layout
 app.layout = html.Div(
     html.Div([
             
@@ -655,7 +681,7 @@ app.layout = html.Div(
                                                  {'label': 'Veel kinderen in de omgeving','value': 'Veel kinderen in de omgeving'},
                                                  {'label': 'Stedelijke omgeving','value': 'Stedelijke omgeving'}
                                                  ],
-                                        value= 'Goede slagingspercentages',
+                                        value= ['Goede slagingspercentages'],
                                         #labelStyle={'display': 'inline-block'}
                                         ),dcc.Graph( id='figure_d1')
     
@@ -994,23 +1020,25 @@ def figure_d1(rows, selected_row_indices, voorkeuren):
     df_numeric = df.loc[:,cols]
     
     # input vector
-    input_vector = pd.Series()
-    for x in df_numeric.columns:
-        input_vector[x] = df_numeric[x].mean()
-        
+    #input_vector = pd.Series()
+    #for x in df_numeric.columns:
+        #input_vector[x] = df_numeric[x].mean()
+    print(voorkeuren)
     # tune input
-    if len(voorkeuren)>0:
-        features, plus_min = convert_preferenes(voorkeuren)
-        input_vector = tune_vector(features,plus_min, input_vector, df_numeric)
+    features, plus_min = convert_preferenes(voorkeuren)
+       # input_vector = tune_vector(features,plus_min, input_vector, df_numeric)
+            
     
     # get ranking
-    df_res = get_ranking(input_vector, df_numeric, 'Score Match')
-    df['MatchScore'] = df_res['Score Match']
+    #df_res = get_ranking(input_vector, df_numeric, 'Score Match')
+    #df['MatchScore'] = df_res['Score Match']
+    print(percentile_rank(df_numeric, features, plus_min))
+    df['MatchScore'] = percentile_rank(df_numeric, features, plus_min)
     df = df.sort_values(by= 'MatchScore')
     
     # graph input
     scholen = df['Schoolnaam'].tolist()
-    ss = df['MatchScore']*100
+    ss = df['MatchScore']
     ss = ss.astype(int).tolist()
     teksts = [str(x) + "% match" for x in ss]
         
