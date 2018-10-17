@@ -422,18 +422,19 @@ def get_percentile(array, value):
     return stats.percentileofscore(array, value, kind='weak')
 
 
-def percentile_rank(df, columns, plus_min):
+def percentile_rank(df,df_total, columns, plus_min):
     i=0
     result_df = pd.DataFrame()
     # for each column
     for i in range(0,len(columns)):
         column_name = columns[i]
         array = df[column_name].tolist()
+        array_total = df_total[column_name].tolist()
         j=0
         res = []
         # compute percentile for each value in column
         for j in range(0,len(array)):
-            percentile = get_percentile(array, array[j])
+            percentile = get_percentile(array_total, array[j])
             if plus_min[i] == 1:
                 res.append(round(percentile,2))
             elif plus_min[i] == -1:
@@ -1018,7 +1019,7 @@ def figure_d1(rows, selected_row_indices, voorkeuren):
        'Bevolkingsdichtheid', 'GemiddeldeWoningwaarde',
        'MateVanStedelijkheid']
     df_numeric = df.loc[:,cols]
-    
+    map_numeric = map_data.loc[:,cols]
     # input vector
     #input_vector = pd.Series()
     #for x in df_numeric.columns:
@@ -1032,8 +1033,7 @@ def figure_d1(rows, selected_row_indices, voorkeuren):
     # get ranking
     #df_res = get_ranking(input_vector, df_numeric, 'Score Match')
     #df['MatchScore'] = df_res['Score Match']
-    print(percentile_rank(df_numeric, features, plus_min))
-    df['MatchScore'] = percentile_rank(df_numeric, features, plus_min)
+    df['MatchScore'] = percentile_rank(df_numeric,map_numeric, features, plus_min)
     df = df.sort_values(by= 'MatchScore')
     
     # graph input
